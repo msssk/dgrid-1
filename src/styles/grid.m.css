@@ -5,4 +5,11 @@
     flex-direction: column;
     border: 1px solid var(--grid-border-color);
     height: 30em;
+    position: relative;
+}
+
+.scrollheader {
+    position: absolute;
+    right: 0;
+    top: 0;
 }

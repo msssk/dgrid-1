@@ -9,8 +9,10 @@ import Body from './Body';
 import GridRegistry, { gridRegistry } from './GridRegistry';
 import Header from './Header';
 import { DataProperties, HasColumns, SortRequestListener } from './interfaces';
+import Scrollbar from './Scrollbar';
 
 import * as css from './styles/grid.m.css';
+import * as sharedCellCss from './styles/shared/cell.m.css';
 
 export const GridBase = ThemeableMixin(RegistryMixin(WidgetBase));
 
@@ -27,6 +29,7 @@ export interface GridProperties extends ThemeableProperties, HasColumns {
 	dataProvider: DataProviderBase;
 }
 
+@theme(sharedCellCss)
 @theme(css)
 class Grid extends GridBase<GridProperties> {
 	private _data: DataProperties<object> = <DataProperties<object>> {};
@@ -85,6 +88,13 @@ class Grid extends GridBase<GridProperties> {
 				theme,
 				onSortRequest
 			}),
+			v('div', {
+				afterCreate: function (element: HTMLElement) {
+					element.style.height = (<HTMLElement> element.previousElementSibling!).offsetHeight + 'px';
+				},
+				classes: this.classes(sharedCellCss.cell, css.scrollheader)
+			}),
+			w<Scrollbar>('scrollbar', {}),
 			w<Body>('body', {
 				columns,
 				items,

@@ -6,6 +6,7 @@ import Footer, { FooterProperties } from './Footer';
 import Header, { HeaderProperties } from './Header';
 import HeaderCell, { HeaderCellProperties } from './HeaderCell';
 import Row, { RowProperties } from './Row';
+import Scrollbar, { ScrollbarProperties } from './Scrollbar';
 
 export interface GridRegistered {
 	[key: string]: WidgetBaseConstructor;
@@ -15,6 +16,7 @@ export interface GridRegistered {
 	header: WidgetBaseConstructor<HeaderProperties>;
 	'header-cell': WidgetBaseConstructor<HeaderCellProperties>;
 	row: WidgetBaseConstructor<RowProperties>;
+	scrollbar: WidgetBaseConstructor<ScrollbarProperties>;
 }
 
 export default class GridRegistry<T extends GridRegistered = GridRegistered> extends WidgetRegistry {
@@ -29,6 +31,7 @@ export default class GridRegistry<T extends GridRegistered = GridRegistered> ext
 		super.define('header', Header);
 		super.define('header-cell', HeaderCell);
 		super.define('row', Row);
+		super.define('scrollbar', Scrollbar);
 	}
 
 	define<K extends keyof T>(widgetLabel: K, registryItem: T[K]): void {
