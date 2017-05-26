@@ -152,12 +152,10 @@ class Grid extends GridBase<GridProperties> {
 		this._minScrollIncrement = scrollbarNode.scrollHeight / 100;
 	}
 
-	protected onElementUpdated(element: HTMLElement, key: string): void {
-		console.log('why does this never get invoked');
-	}
-
 	protected onElementCreated(element: HTMLElement, key: string): void {
-		console.log('why does this never get invoked');
+		if (key === 'grid') {
+			this._updateScrollDimensions(element);
+		}
 	}
 
 	render(): DNode {
@@ -175,8 +173,8 @@ class Grid extends GridBase<GridProperties> {
 		} = this;
 
 		return v('div', {
-			afterCreate: this._updateScrollDimensions.bind(this),
 			classes: this.classes(css.grid),
+			key: 'grid',
 			role: 'grid'
 		}, [
 			w<Header>('header', {
