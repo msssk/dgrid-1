@@ -36,6 +36,14 @@ class Grid extends GridBase<GridProperties> {
 	private _subscription: Subscription;
 	private _sortRequestListener: SortRequestListener;
 
+	protected _isBodyScrollHandlerDisabled: boolean;
+	protected _isScrollbarScrollHandlerDisabled: boolean;
+	protected _lastScrollerScrollTop: number;
+	protected _minScrollIncrement: number;
+	protected _scrollbarNode: HTMLElement;
+	protected _scrollerNode: HTMLElement;
+	protected _scrollScaleFactor: number;
+
 	constructor() {
 		super();
 
@@ -63,6 +71,95 @@ class Grid extends GridBase<GridProperties> {
 		};
 	}
 
+	_disableBodyScrollHandler (timeout = 70) {
+		this._isBodyScrollHandlerDisabled = true;
+		setTimeout(this._enableBodyScrollHandler.bind(this), timeout);
+	}
+
+	_disableScrollbarScrollHandler (timeout = 70) {
+		this._isScrollbarScrollHandlerDisabled = true;
+		setTimeout(this._enableScrollbarScrollHandler.bind(this), timeout);
+	}
+
+	_enableBodyScrollHandler () {
+		this._isBodyScrollHandlerDisabled = false;
+	}
+
+	_enableScrollbarScrollHandler () {
+		this._isScrollbarScrollHandlerDisabled = false;
+	}
+
+	_handleBodyScroll (event: Event) {
+		const newScrollTop = this._scrollerNode.scrollTop;
+
+		if (Math.abs(newScrollTop - this._lastScrollerScrollTop) < this._minScrollIncrement) {
+			return;
+		}
+
+		this._disableScrollbarScrollHandler();
+
+		// TODO: this kills scroll performance in Firefox and Edge
+		this._scrollbarNode.scrollTop = Math.round(newScrollTop / this._scrollScaleFactor);
+
+		this._lastScrollerScrollTop = newScrollTop;
+		console.log(newScrollTop, Math.round(newScrollTop / this._scrollScaleFactor));
+	}
+
+	_handleScrollbarScroll () {
+		this._disableBodyScrollHandler();
+		this._scrollerNode.scrollTop = Math.round(this._scrollbarNode.scrollTop * this._scrollScaleFactor);
+	}
+
+	protected _updateScrollDimensions (gridNode: HTMLElement) {
+		const headerNode = <HTMLElement> gridNode.firstElementChild;
+		const scrollHeaderNode = <HTMLElement> headerNode.nextElementSibling;
+		const scrollbarNode = <HTMLElement> scrollHeaderNode.nextElementSibling;
+		const scrollHeightNode = <HTMLElement> scrollbarNode.firstElementChild;
+		const scrollerNode = <HTMLElement> scrollbarNode.nextElementSibling;
+		const contentNode = <HTMLElement> scrollerNode.firstElementChild;
+
+		this._scrollbarNode = scrollbarNode;
+		this._scrollerNode = scrollerNode;
+
+		let scrollbarWidth = scrollerNode.offsetWidth - scrollerNode.clientWidth;
+
+		// Handle Safari which hides the scrollbar by default, giving a width of 0
+		// Inspection has shown the visible scrollbar width to be 7px
+		if (scrollbarWidth === 0) {
+			scrollbarWidth = 7;
+		}
+
+		// Add 1 pixel: some browsers (IE, FF) don't make the scrollbar active if it doesn't have visible content
+		scrollbarWidth += 1;
+		const heightString = headerNode.offsetHeight + 'px';
+		const widthString = scrollbarWidth + 'px';
+
+		headerNode.style.paddingRight = (scrollbarWidth - 1) + 'px';
+		scrollHeaderNode.style.height = heightString;
+		scrollHeaderNode.style.width = widthString;
+		scrollHeightNode.style.height = Math.min(10000, contentNode.offsetHeight) + 'px';
+		scrollbarNode.style.top = heightString;
+		scrollbarNode.style.height = (gridNode.offsetHeight - scrollHeaderNode.offsetHeight) + 'px';
+		scrollbarNode.style.width = widthString;
+
+		if (scrollbarNode.scrollHeight < scrollerNode.scrollHeight) {
+			this._scrollScaleFactor = scrollerNode.scrollHeight / scrollbarNode.scrollHeight;
+		}
+		else {
+			this._scrollScaleFactor = 1;
+		}
+
+		this._minScrollIncrement = scrollbarNode.scrollHeight / 100;
+	}
+
+	protected onElementUpdated(element: HTMLElement, key: string): void {
+		console.log('why does this never get invoked');
+	}
+
+	protected onElementCreated(element: HTMLElement, key: string): void {
+		console.log('why does this never get invoked');
+	}
+
 	render(): DNode {
 		const {
 			_data: {
@@ -78,6 +175,7 @@ class Grid extends GridBase<GridProperties> {
 		} = this;
 
 		return v('div', {
+			afterCreate: this._updateScrollDimensions.bind(this),
 			classes: this.classes(css.grid),
 			role: 'grid'
 		}, [
@@ -89,14 +187,14 @@ class Grid extends GridBase<GridProperties> {
 				onSortRequest
 			}),
 			v('div', {
-				afterCreate: function (element: HTMLElement) {
-					element.style.height = (<HTMLElement> element.previousElementSibling!).offsetHeight + 'px';
-				},
 				classes: this.classes(sharedCellCss.cell, css.scrollheader)
 			}),
-			w<Scrollbar>('scrollbar', {}),
+			w<Scrollbar>('scrollbar', {
+				handleScroll: this._handleScrollbarScroll.bind(this)
+			}),
 			w<Body>('body', {
 				columns,
+				handleScroll: this._handleBodyScroll.bind(this),
 				items,
 				registry,
 				theme

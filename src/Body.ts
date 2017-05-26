@@ -9,41 +9,24 @@ import * as bodyClasses from './styles/body.m.css';
 
 export const BodyBase = ThemeableMixin(RegistryMixin(WidgetBase));
 
-export interface BodyProperties extends ThemeableProperties, HasColumns, HasItems, RegistryMixinProperties { }
+export interface BodyProperties extends ThemeableProperties, HasColumns, HasItems, RegistryMixinProperties {
+	handleScroll?: (event: UIEvent) => void;
+}
 
 @theme(bodyClasses)
 class Body extends BodyBase<BodyProperties> {
 	render() {
 		const {
 			columns,
+			handleScroll = () => true,
 			items,
 			registry,
 			theme
 		} = this.properties;
 
 		return v('div', {
-				afterCreate: function (element: HTMLElement) {
-					let scrollbarWidth = element.offsetWidth - element.clientWidth;
-
-					if (!scrollbarWidth) {
-						scrollbarWidth = 7;
-					}
-
-					scrollbarWidth += 1;
-
-					const widthString = scrollbarWidth + 'px';
-					let scrollbarNode = <HTMLElement> element.previousElementSibling;
-					scrollbarNode.style.width = widthString;
-					let scrollHeaderNode = <HTMLElement> scrollbarNode.previousElementSibling;
-					scrollHeaderNode.style.width = widthString;
-					scrollbarNode.style.top = scrollHeaderNode.offsetHeight + 'px';
-					let gridNode = <HTMLElement> scrollbarNode.parentElement;
-					// gridNode does not yet have CSS applied so wait until it has correct height
-					setTimeout(function () {
-						scrollbarNode.style.height = (gridNode.offsetHeight - scrollHeaderNode.offsetHeight) + 'px';
-					});
-				},
-				classes: this.classes(bodyClasses.scroller)
+				classes: this.classes(bodyClasses.scroller),
+				onscroll: handleScroll
 			},
 			[
 				v('div', {

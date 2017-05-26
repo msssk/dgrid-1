@@ -1,9 +1,9 @@
 .scrollbar {
-	height: 100%;
 	overflow-x: hidden;
 	overflow-y: scroll;
 	position: absolute;
 	right: 0;
-	top: 0;
+	top: 25px;
+	width: 18px;
 	z-index: 1;
 }

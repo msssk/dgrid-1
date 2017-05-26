@@ -6,14 +6,21 @@ import * as css from './styles/scrollbar.m.css';
 
 export const ScrollbarBase = ThemeableMixin(WidgetBase);
 
-export interface ScrollbarProperties extends ThemeableProperties { }
+export interface ScrollbarProperties extends ThemeableProperties {
+	handleScroll?: (event: UIEvent) => void;
+}
 
 @theme(css)
 class Scrollbar extends ScrollbarBase<ScrollbarProperties> {
 	render() {
+		const {
+			handleScroll = () => true
+		} = this.properties;
+
 		return v('div', {
-				classes: this.classes(css.scrollbar)
-			}
+				classes: this.classes(css.scrollbar),
+				onscroll: handleScroll
+			}, [ v('div') ]
 		);
 	}
 }
