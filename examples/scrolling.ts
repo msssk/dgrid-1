@@ -58,7 +58,29 @@ class Projector extends ProjectorBase<WidgetProperties> {
 			w(Grid, {
 				dataProvider,
 				columns
-			})
+			}),
+			v('form', {
+				id: 'configform'
+			}, [
+				'Scroll synchronization: ',
+				v('label', [
+					v('input', {
+						type: 'radio',
+						name: 'scrollsync',
+						value: 'enabled',
+						checked: true
+					}),
+					'Enabled'
+				]),
+				v('label', [
+					v('input', {
+						type: 'radio',
+						name: 'scrollsync',
+						value: 'disabled'
+					}),
+					'Disabled'
+				])
+			])
 		]);
 	}
 }
@@ -69,18 +91,81 @@ projector.append();
 
 setTimeout(function () {
 	const gridNode = <HTMLElement> document.querySelector('[role="grid"]');
-	const bodyNode = gridNode.children[1];
-	const scrollbarNode = document.createElement('div');
-	const scrollHeightNode = document.createElement('div');
+	gridNode.style.position = 'relative';
 
-	scrollbarNode.style.height = '100%';
-	scrollbarNode.style.overflowX = 'hidden';
-	scrollbarNode.style.overflowY = 'scroll';
-	scrollbarNode.style.position = 'absolute';
-	scrollbarNode.style.right = '0';
-	scrollbarNode.style.top = '0';
-	scrollbarNode.style.width = '18px';
-	scrollHeightNode.style.height = bodyNode.scrollHeight + 'px';
-	scrollbarNode.appendChild(scrollHeightNode);
-	gridNode.appendChild(scrollbarNode);
+	const bodyNode = <HTMLElement> gridNode.children[1];
+	bodyNode.style.overflowY = 'scroll';
+	bodyNode.style.overflowX = 'hidden';
+
+	setTimeout(function () {
+		const scrollbarNode = document.createElement('div');
+
+		scrollbarNode.style.height = bodyNode.offsetHeight + 'px';
+		scrollbarNode.style.overflowX = 'hidden';
+		scrollbarNode.style.overflowY = 'scroll';
+		scrollbarNode.style.position = 'absolute';
+		scrollbarNode.style.right = '0';
+		const headerNode = <HTMLElement> gridNode.firstElementChild;
+		scrollbarNode.style.top = headerNode.offsetHeight + 'px';
+		const scrollbarWidth = bodyNode.offsetWidth - bodyNode.clientWidth;
+		scrollbarNode.style.width = (scrollbarWidth + 1) + 'px';
+		bodyNode.style.width = (gridNode.clientWidth - scrollbarWidth) + 'px';
+		const contentNode = <HTMLElement> bodyNode.firstElementChild;
+		const contentWidth = gridNode.clientWidth - scrollbarWidth + 1;
+		contentNode.style.width = contentWidth + 'px';
+		headerNode.style.width = contentWidth + 'px';
+
+		const scrollHeightNode = document.createElement('div');
+		scrollHeightNode.style.height = bodyNode.scrollHeight + 'px';
+		scrollHeightNode.style.width = '100%';
+		scrollbarNode.appendChild(scrollHeightNode);
+		gridNode.appendChild(scrollbarNode);
+
+
+		let contentScrollPauseCounter = 0;
+		let scrollerScrollPauseCounter = 0;
+
+		function handleContentScroll (event: Event) {
+			if (contentScrollPauseCounter) {
+				contentScrollPauseCounter--;
+				return;
+			}
+
+			scrollerScrollPauseCounter++;
+			scrollbarNode.scrollTop = (<HTMLElement> event.target).scrollTop;
+		}
+
+		function handleScrollerScroll (event: Event) {
+			if (scrollerScrollPauseCounter) {
+				scrollerScrollPauseCounter--;
+				return;
+			}
+
+			contentScrollPauseCounter++;
+			bodyNode.scrollTop = (<HTMLElement> event.target).scrollTop;
+		}
+
+		function disableScrollSync () {
+			bodyNode.removeEventListener('scroll', handleContentScroll);
+			scrollbarNode.removeEventListener('scroll', handleScrollerScroll);
+		}
+
+		function enableScrollSync () {
+			bodyNode.addEventListener('scroll', handleContentScroll);
+			scrollbarNode.addEventListener('scroll', handleScrollerScroll);
+		}
+
+		enableScrollSync();
+
+		document.getElementById('configform')!.addEventListener('change', function (event: Event) {
+			const radio = <HTMLFormElement> event.target;
+
+			if (radio.value === 'disabled') {
+				disableScrollSync();
+			}
+			else {
+				enableScrollSync();
+			}
+		});
+	});
 }, 500);
