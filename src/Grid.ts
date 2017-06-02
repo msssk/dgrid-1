@@ -36,13 +36,13 @@ class Grid extends GridBase<GridProperties> {
 	private _subscription: Subscription;
 	private _sortRequestListener: SortRequestListener;
 
-	protected _isBodyScrollHandlerDisabled: boolean;
-	protected _isScrollbarScrollHandlerDisabled: boolean;
 	protected _lastScrollerScrollTop: number;
 	protected _minScrollIncrement: number;
 	protected _scrollbarNode: HTMLElement;
 	protected _scrollerNode: HTMLElement;
 	protected _scrollScaleFactor: number;
+	protected _bodyScrollPauseCounter = 0;
+	protected _scrollerScrollPauseCounter = 0;
 
 	constructor() {
 		super();
@@ -71,42 +71,32 @@ class Grid extends GridBase<GridProperties> {
 		};
 	}
 
-	_disableBodyScrollHandler (timeout = 70) {
-		this._isBodyScrollHandlerDisabled = true;
-		setTimeout(this._enableBodyScrollHandler.bind(this), timeout);
-	}
-
-	_disableScrollbarScrollHandler (timeout = 70) {
-		this._isScrollbarScrollHandlerDisabled = true;
-		setTimeout(this._enableScrollbarScrollHandler.bind(this), timeout);
-	}
-
-	_enableBodyScrollHandler () {
-		this._isBodyScrollHandlerDisabled = false;
-	}
-
-	_enableScrollbarScrollHandler () {
-		this._isScrollbarScrollHandlerDisabled = false;
-	}
-
 	_handleBodyScroll (event: Event) {
+		if (this._bodyScrollPauseCounter) {
+			this._bodyScrollPauseCounter--;
+			return;
+		}
+
 		const newScrollTop = this._scrollerNode.scrollTop;
 
 		if (Math.abs(newScrollTop - this._lastScrollerScrollTop) < this._minScrollIncrement) {
 			return;
 		}
 
-		this._disableScrollbarScrollHandler();
+		this._scrollerScrollPauseCounter++;
 
-		// TODO: this kills scroll performance in Firefox and Edge
 		this._scrollbarNode.scrollTop = Math.round(newScrollTop / this._scrollScaleFactor);
 
 		this._lastScrollerScrollTop = newScrollTop;
-		console.log(newScrollTop, Math.round(newScrollTop / this._scrollScaleFactor));
 	}
 
 	_handleScrollbarScroll () {
-		this._disableBodyScrollHandler();
+		if (this._scrollerScrollPauseCounter) {
+			this._scrollerScrollPauseCounter--;
+			return;
+		}
+
+		this._bodyScrollPauseCounter++;
 		this._scrollerNode.scrollTop = Math.round(this._scrollbarNode.scrollTop * this._scrollScaleFactor);
 	}
 
