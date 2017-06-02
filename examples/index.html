@@ -44,7 +44,8 @@
 			}
 
 			if (module) {
-				document.getElementById('links').remove();
+				var linksNode = document.getElementById('links');
+				linksNode.parentNode.removeChild(linksNode);
 				require([ 'examples/' + module ], function () {});
 			}
 		})();
